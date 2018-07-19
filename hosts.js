@@ -28,6 +28,10 @@ class Hosts {
   }
 }
 
-Hosts.default = FS.readFileSync('./hosts', {encoding: 'utf8'})
+Object.defineProperty(Hosts, 'default', {
+  get() {
+    return FS.readFileSync('./hosts', {encoding: 'utf8'})
+  }
+})
 
 module.exports = Hosts

@@ -25,6 +25,7 @@ class PixivAPI {
     return this.callApi('https://oauth.secure.pixiv.net/auth/token', {
       method: 'POST',
       headers: {
+        ...this.headers,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       data: QS.stringify({
@@ -36,6 +37,7 @@ class PixivAPI {
         password,
       })
     }).then(res => {
+      console.log(res)
       this.auth = res.data.response
       this.rememberPassword = rememberPassword === false
       if (rememberPassword) {
@@ -82,16 +84,14 @@ class PixivAPI {
   }
 
   callApi(url, options) {
-    if (!(url instanceof URL)) url = new URL(BASE_URL, url)
-    options = Object.assign({
+    if (!(url instanceof URL)) url = new URL(url, BASE_URL)
+    options = Object.assign({}, options, {
       hostname: this.hosts.getHostName(url.hostname),
       servername: url.hostname,
-      path: url.path,
-      method: 'GET',
-      headers: {
-        Hosts: url.hostname
-      }
-    }, options)
+      path: url.pathname
+    })
+    options.headers.Host = url.hostname
+    console.log(options)
     return new Promise((resolve, reject) => {
       let data = ''
       const request = this.request(options, response => {
