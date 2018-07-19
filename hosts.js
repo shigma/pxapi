@@ -1,3 +1,5 @@
+const FS = require('fs')
+
 class Hosts {
   constructor(data) {
     if (typeof data === 'string') {
@@ -16,6 +18,16 @@ class Hosts {
       if (match) this.data[match[2]] = match[1]
     })
   }
+
+  getHostName(serverName) {
+    if (serverName in this.data) {
+      return this.data[serverName]
+    } else {
+      return serverName
+    }
+  }
 }
+
+Hosts.default = FS.readFileSync('./hosts', {encoding: 'utf8'})
 
 module.exports = Hosts
