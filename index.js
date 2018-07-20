@@ -22,21 +22,24 @@ class PixivAPI {
   login(username, password, rememberPassword) {
     if (!username) return Promise.reject(new Error('username required'))
     if (!password) return Promise.reject(new Error('password required'))
-    return this.callApi('https://oauth.secure.pixiv.net/auth/token', {
-      method: 'POST',
-      headers: {
-        ...this.headers,
-        'Content-Type': 'application/x-www-form-urlencoded',
+    return this.callApi(
+      'https://oauth.secure.pixiv.net/auth/token',
+      {
+        method: 'POST',
+        headers: {
+          ...this.headers,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       },
-      data: QS.stringify({
+      QS.stringify({
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
         get_secure_url: 1,
         grant_type: 'password',
         username,
         password,
-      })
-    }).then(res => {
+      }
+      )).then(res => {
       console.log(res)
       this.auth = res.data.response
       this.rememberPassword = rememberPassword === false
@@ -83,7 +86,7 @@ class PixivAPI {
     })
   }
 
-  callApi(url, options) {
+  callApi(url, options, postdata=null) {
     if (!(url instanceof URL)) url = new URL(url, BASE_URL)
     options = Object.assign({}, options, {
       hostname: this.hosts.getHostName(url.hostname),
@@ -99,6 +102,9 @@ class PixivAPI {
         response.on('end', () => resolve(data))
       })
       request.on('error', error => reject(error))
+      if (postdata) {
+        request.write(postdata);
+      }
       request.end()
     })
   }
