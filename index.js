@@ -7,9 +7,14 @@ const CLIENT_ID = 'KzEZED7aC0vird8jWyHM38mXjNTY'
 const CLIENT_SECRET = 'W9JZoJe00qPvJsiyCGT3CCtC6ZUtdpKpzMbNlUGP'
 
 class PixivAPI {
-  constructor({request, hosts} = {}) {
-    this.request = request || require('https').request
+  constructor({library, hosts} = {}) {
+    /** Web Library */
+    this.library = library || require('https')
+
+    /** Host Map */
     this.hosts = new Hosts(hosts || Hosts.default)
+
+    /** Default Headers */
     this.headers = {
       'App-OS': 'ios',
       'Accept-Language': 'en-us',
@@ -19,40 +24,42 @@ class PixivAPI {
     }
   }
 
-  login(username, password, rememberPassword) {
+  /**
+   * Log in your pixiv account
+   * @param {string} username User Name
+   * @param {string} password Password
+   * @param {boolean} remember Whether to remember password
+   */
+  login(username, password, remember) {
     if (!username) return Promise.reject(new Error('username required'))
     if (!password) return Promise.reject(new Error('password required'))
-    return this.callApi(
-      'https://oauth.secure.pixiv.net/auth/token',
-      {
-        method: 'POST',
-        headers: {
-          ...this.headers,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+    return this.request({
+      url: 'https://oauth.secure.pixiv.net/auth/token',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      QS.stringify({
+      postdata: QS.stringify({
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
         get_secure_url: 1,
         grant_type: 'password',
         username,
         password,
-      }
-      )).then(res => {
-      console.log(res)
-      this.auth = res.data.response
-      this.rememberPassword = rememberPassword === false
-      if (rememberPassword) {
+      })
+    }).then((data) => {
+      this.auth = data.response
+      this.remember = remember === false
+      if (remember) {
         this.username = username
         this.password = password
       }
-      return res.data.response
-    }).catch(err => {
-      if (err.response) {
-        throw err.response.data
+      return data.response
+    }).catch((error) => {
+      if (error.response) {
+        throw error.response.data
       } else {
-        throw err.message
+        throw error.message
       }
     })
   }
@@ -86,24 +93,28 @@ class PixivAPI {
     })
   }
 
-  callApi(url, options, postdata=null) {
-    if (!(url instanceof URL)) url = new URL(url, BASE_URL)
-    options = Object.assign({}, options, {
-      hostname: this.hosts.getHostName(url.hostname),
-      servername: url.hostname,
-      path: url.pathname
-    })
-    options.headers.Host = url.hostname
-    console.log(options)
+  // Custom request sender
+  request({url, method = 'POST', headers = {}, postdata}) {
+    if (!(url instanceof URL)) {
+      url = new URL(url, BASE_URL)
+    }
     return new Promise((resolve, reject) => {
       let data = ''
-      const request = this.request(options, response => {
+      const request = this.library.request({
+        method,
+        headers: Object.assign({
+          Host: url.hostname
+        }, this.headers, headers),
+        hostname: this.hosts.getHostName(url.hostname),
+        servername: url.hostname,
+        path: url.pathname
+      }, (response) => {
         response.on('data', chunk => data += chunk)
-        response.on('end', () => resolve(data))
+        response.on('end', () => resolve(JSON.parse(data)))
       })
       request.on('error', error => reject(error))
       if (postdata) {
-        request.write(postdata);
+        request.write(postdata)
       }
       request.end()
     })
