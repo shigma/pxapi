@@ -1,6 +1,7 @@
 const QS = require('querystring')
 const URL = require('url').URL
 const Hosts = require('./hosts.js')
+const searchData = require('./search')
 
 const BASE_URL = 'https://app-api.pixiv.net'
 const CLIENT_ID = 'KzEZED7aC0vird8jWyHM38mXjNTY'
@@ -14,12 +15,17 @@ function catcher(error) {
   }
 }
 
-function toKebab(object) {
-  const result = {}
-  for (const key in object) {
-    result[key.replace(/[A-Z]/g, char => '-' + char.toLowerCase())] = object[key]
+function toKebab(source) {
+  if (typeof source === 'string') {
+    return source.replace(/-/g, '_')
+      .replace(/[A-Z]/g, char => '_' + char.toLowerCase())
+  } else {
+    const result = {}
+    for (const key in source) {
+      result[toKebab(key)] = toKebab(source[key])
+    }
+    return result
   }
-  return result
 }
 
 class PixivAPI {
@@ -52,7 +58,7 @@ class PixivAPI {
         }, this.headers, headers),
         hostname: this.hosts.getHostName(url.hostname),
         servername: url.hostname,
-        path: url.pathname
+        path: url.pathname + url.search
       }, (response) => {
         response.on('data', chunk => data += chunk)
         response.on('end', () => resolve(JSON.parse(data)))
@@ -222,6 +228,59 @@ class PixivAPI {
     return this.authRequest('/v1/mail-authentication/send', {
       method: 'POST',
     })
+  }
+
+  /**
+   * @private Search (authorization required)
+   * @param {string} category Search category
+   * @param {string} key Search key
+   * @param {string} type Search type
+   * @param {object} options Search options
+   */
+  search(category, key, type, options = {}) {
+    if (!key) {
+      return Promise.reject(new TypeError('key required'))
+    } else if (!searchData[category]) {
+      return Promise.reject(new RangeError(`"${category}" is not a supported category.`))
+    } else if (!searchData[category][type]) {
+      return Promise.reject(new RangeError(`"${type}" is not a supported type.`))
+    } else {
+      const search = searchData[category][type]
+      const query = {filter: 'for_ios'}
+      query[searchData[category].key] = key
+      if (search.options instanceof Function) {
+        Object.assign(query, search.options.call(this))
+      } else if (search.options instanceof Object) {
+        Object.assign(query, search.options)
+      }
+      let request = this.authRequest(`${search.url}?${
+        QS.stringify(Object.assign(query, toKebab(options)))
+      }`)
+      if (search.then) request = request.then(search.then)
+      return request
+    }
+  }
+
+  /**
+   * Search by keyword (authorization required)
+   * @param {string} key Search key
+   * @param {string} type Search type
+   * @param {object} options Search options
+   * 
+   * Supported types: `illust`, `illustPopularPreview`, `illustBookmarkRanges`,
+   * `novel`, `novelPopularPreview`, `novelBookmarkRanges`, `user`, `autoComplete`.
+   * 
+   * Supported options: `searchTarget`, `sort`.
+   * 
+   * Supported search target: `partialMatchForTags`, `exactMatchForTags`, `titleAndCaption`.
+   * 
+   * Supported sorting method: `dateDesc`, `dateAsc`,
+   * `popularDesc`(only available for pixiv premium member).
+   * 
+   * All specifications can be in either kebab-cases or camel-cases.
+   */
+  searchWord(...args) {
+    return this.search('word', ...args)
   }
 }
 
