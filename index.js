@@ -306,6 +306,22 @@ class PixivAPI {
   searchUser(id, type, options = {}) {
     return this.search('user', id, type, options)
   }
+
+  /**
+   * Search by illustration (authorization required)
+   * @param {number} id Illustration id
+   * @param {string} type Search type
+   * @param {object} options Search options
+   * 
+   * - Supported types: `detail`, `illusts`, `bookmarkIllusts`, `bookmarkTags`.
+   * - Supported options: `restrict`.
+   * - Supported restrictions: `public`, `private`.
+   * 
+   * All options can be in either kebab-cases or snake-cases.
+   */
+  searchIllust(id, type, options = {}) {
+    return this.search('illust', id, type, options)
+  }
 }
 
 module.exports = PixivAPI

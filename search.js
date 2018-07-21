@@ -39,17 +39,11 @@ class PixivUser {
     this.profile_publicity = data.profile_publicity
     /** User workspace */
     this.workspace = data.workspace
-    /** @private Pixiv API */
+    /** Pixiv API */
     this.api = api
-    /**
-     * @private Illustrations
-     * @type {Proxy} Collections
-     **/
+    /** User illustrations */
     this._illusts = collect(data.illusts || [], {api}, PixivIllust)
-    /**
-     * @private Novels
-     * @type {Proxy} Collections
-     **/
+    /** User novels */
     this._novels = collect(data.novels || [], {api}, PixivNovel)
   }
 
@@ -191,5 +185,12 @@ module.exports = {
         restrict: 'public'
       }
     },
+  },
+  illust: {
+    _key: 'illust_id',
+    bookmarkDetail: {
+      url: '/v2/illust/bookmark/detail',
+      then: data => data.bookmark_detail
+    }
   }
 }
