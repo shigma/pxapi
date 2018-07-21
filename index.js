@@ -197,6 +197,21 @@ class PixivAPI {
     })
   }
 
+  /**
+   * @private Post request with authorization
+   * @param {URL} url URL
+   * @param {string|object} postdata Postdata
+   */
+  postRequest(url, postdata) {
+    return this.authRequest(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      postdata
+    })
+  }
+
   /** Get pixiv user state (authorization required) */
   userState() {
     if (this.allowCache && this._user_state) return this._user_state
@@ -225,20 +240,12 @@ class PixivAPI {
     if (info.pixivId) postdata.new_user_account = info.pixivId
     if (info.newPassword) postdata.new_password = info.newPassword
     if (info.email) postdata.new_mail_address = info.email
-    return this.authRequest('https://accounts.pixiv.net/api/account/edit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      postdata,
-    })
+    return this.postRequest('https://accounts.pixiv.net/api/account/edit', postdata)
   }
 
   /** Send account verification email (authorization required) */
   sendAccountVerificationEmail() {
-    return this.authRequest('/v1/mail-authentication/send', {
-      method: 'POST',
-    })
+    return this.postRequest('/v1/mail-authentication/send')
   }
 
   /**
@@ -343,7 +350,7 @@ class PixivAPI {
    * @param {object} options Illustration options
    * 
    * - Supported types: `walkthrough`, `new`, `follow`,
-   * `recommended`, `ranking`, `myPixiv`.
+   * `recommended`, `ranking`, `myPixiv`, `trendingTags`.
    * - Supported options: `restrict`, `mode`.
    * - Supported restrictions: `all`, `public`, `private`.
    * - Supported modes: `day`, `week`, `month`, `day_male`, `day_female`,
@@ -355,6 +362,26 @@ class PixivAPI {
    */
   getIllusts(type, options = {}) {
     return this.search('get_illusts', null, type, options)
+  }
+
+  /**
+   * Get novels
+   * @param {string} type Novel type
+   * @param {object} options Novel options
+   * 
+   * - Supported types: `walkthrough`, `new`, `follow`,
+   * `recommended`, `ranking`, `myPixiv`, `trendingTags`.
+   * - Supported options: `restrict`, `mode`.
+   * - Supported restrictions: `all`, `public`, `private`.
+   * - Supported modes: `day`, `week`, `month`, `day_male`, `day_female`,
+   * `week_original`, `week_rookie`, `day_r18`, `day_male_r18`, `day_female_r18`,
+   * `week_r18`, `week_r18g`, `day_manga`, `week_manga`, `month_manga`,
+   * `week_rookie_manga`, `day_r18_manga`, `week_r18_manga`, `week_r18g_manga`.
+   * 
+   * All options can be in either kebab-cases or snake-cases.
+   */
+  getNovels(type, options = {}) {
+    return this.search('get_novels', null, type, options)
   }
 }
 

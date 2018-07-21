@@ -78,6 +78,26 @@ class PixivUser {
       return this._novels
     })
   }
+
+  /**
+   * Follow user
+   * @param {string} restrict Restriction
+   * 
+   * Restriction can be `public` or `private`.
+   **/
+  follow(restrict = 'public') {
+    return this.api.postRequest('/v1/user/follow/add', {
+      user_id: this.id,
+      restrict,
+    })
+  }
+
+  /** Unfollow user */
+  unfollow() {
+    return this.api.postRequest('/v1/user/follow/delete', {
+      user_id: this.id
+    })
+  }
 }
 
 class PixivIllust {
@@ -126,6 +146,41 @@ class PixivIllust {
       return this._related
     })
   }
+
+  /**
+   * Add a comment
+   * @param {string} comment Comment
+   **/
+  addComment(comment) {
+    if (!comment) return Promise.reject(new TypeError('comment required'))
+    return this.api.postRequest('/v1/illust/comment/add', {
+      illust_id: this.id,
+      comment
+    })
+  }
+
+  /**
+   * Add bookmark
+   * @param {Array<string>} tags Tags to add
+   * @param {string} restrict Restriction
+   * 
+   * Restriction can be `public` or `private`.
+   **/
+  addBookmark(tags = [], restrict = 'public') {
+    if (!(tags instanceof Array)) return Promise.reject(new TypeError('invalid tags'))
+    return this.api.postRequest('/v2/illust/bookmark/add', {
+      illust_id: this.id,
+      restrict,
+      tags,
+    })
+  }
+
+  /** Delete bookmark */
+  deleteBookmark() {
+    return this.api.postRequest('/v1/illust/bookmark/delete', {
+      illust_id: this.id
+    })
+  }
 }
 
 class PixivNovel {
@@ -138,6 +193,41 @@ class PixivNovel {
   /** Author */
   get author() {
     return new PixivUser({user: this.user}, this.api)
+  }
+
+  /**
+   * Add a comment
+   * @param {string} comment Comment
+   **/
+  addComment(comment) {
+    if (!comment) return Promise.reject(new TypeError('comment required'))
+    return this.api.postRequest('/v1/novel/comment/add', {
+      novel_id: this.id,
+      comment
+    })
+  }
+
+  /**
+   * Add bookmark
+   * @param {Array<string>} tags Tags to add
+   * @param {string} restrict Restriction
+   * 
+   * Restriction can be `public` or `private`.
+   **/
+  addBookmark(tags = [], restrict = 'public') {
+    if (!(tags instanceof Array)) return Promise.reject(new TypeError('invalid tags'))
+    return this.api.postRequest('/v2/novel/bookmark/add', {
+      novel_id: this.id,
+      restrict,
+      tags,
+    })
+  }
+
+  /** Delete bookmark */
+  deleteBookmark() {
+    return this.api.postRequest('/v1/novel/bookmark/delete', {
+      novel_id: this.id
+    })
   }
 }
 

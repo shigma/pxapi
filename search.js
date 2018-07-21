@@ -162,6 +162,52 @@ module.exports = {
     myPixiv: {
       url: '/v2/illust/mypixiv',
       then: collect.illusts
+    },
+    trendingTags: {
+      url: '/v1/trending-tags/illust',
+      then: data => data.trend_tags
+    }
+  },
+  get_novels: {
+    walkthrough: {
+      url: '/v1/walkthrough/novels',
+      then: collect.novels
+    },
+    new: {
+      url: '/v1/novel/new',
+      options: {
+        content_type: 'illust'
+      },
+      then: collect.novels
+    },
+    follow: {
+      url: '/v2/novel/follow',
+      options: {
+        restrict: 'all'
+      },
+      then: collect.novels
+    },
+    recommended: {
+      url: '/v1/novel/recommended',
+      options: {
+        include_ranking_novels: true
+      },
+      then: collect.novels
+    },
+    ranking: {
+      url: '/v1/novel/ranking',
+      options: {
+        mode: 'day'
+      },
+      then: collect.novels
+    },
+    myPixiv: {
+      url: '/v2/novel/mypixiv',
+      then: collect.novels
+    },
+    trendingTags: {
+      url: '/v1/trending-tags/novel',
+      then: data => data.trend_tags
     }
   }
 }
