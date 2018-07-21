@@ -250,14 +250,15 @@ class PixivAPI {
    * @param {Function} callback Callback
    */
   search(category, key, type, options, callback) {
-    if (!key) {
-      return Promise.reject(new TypeError('key required'))
-    } else if (!searchData[category][type]) {
+    if (!searchData[category][type]) {
       return Promise.reject(new RangeError(`"${type}" is not a supported type.`))
     } else {
       const search = searchData[category][type]
       const query = {filter: 'for_ios'}
-      query[searchData[category]._key] = key
+      if (searchData[category]._key) {
+        if (!key) return Promise.reject(new TypeError('key required'))
+        query[searchData[category]._key] = key
+      }
       if (search.options instanceof Function) {
         Object.assign(query, search.options.call(this))
       } else if (search.options instanceof Object) {
@@ -299,7 +300,7 @@ class PixivAPI {
    * 
    * - Supported types: `detail`, `illusts`, `bookmarkIllusts`, `bookmarkTags`.
    * - Supported options: `restrict`.
-   * - Supported restrictions: `public`, `private`.
+   * - Supported restrictions: `all`, `public`, `private`.
    * 
    * All options can be in either kebab-cases or snake-cases.
    */
@@ -313,14 +314,47 @@ class PixivAPI {
    * @param {string} type Search type
    * @param {object} options Search options
    * 
-   * - Supported types: `detail`, `illusts`, `bookmarkIllusts`, `bookmarkTags`.
-   * - Supported options: `restrict`.
-   * - Supported restrictions: `public`, `private`.
+   * - Supported types: `detail`, `illusts`, `bookmarkIllusts`, `bookmarkIllustTags`,
+   * `bookmarkNovels`, `bookmarkNovelTags`.
    * 
    * All options can be in either kebab-cases or snake-cases.
    */
-  searchIllust(id, type, options = {}) {
+  searchIllust(id, type = 'detail', options = {}) {
     return this.search('illust', id, type, options)
+  }
+
+  /**
+   * Search by comment (authorization required)
+   * @param {number} id Comment id
+   * @param {string} type Search type
+   * @param {object} options Search options
+   * 
+   * - Supported types: `replies`.
+   * 
+   * All options can be in either kebab-cases or snake-cases.
+   */
+  searchComment(id, type, options = {}) {
+    return this.search('comment', id, type, options)
+  }
+
+  /**
+   * Get illustrations
+   * @param {string} type Illustration type
+   * @param {object} options Illustration options
+   * 
+   * - Supported types: `walkthrough`, `new`, `follow`,
+   * `recommended`, `ranking`, `myPixiv`.
+   * - Supported options: `restrict`, `mode`.
+   * - Supported restrictions: `all`, `public`, `private`.
+   * - Supported modes: `day`, `week`, `month`, `day_male`, `day_female`,
+   * `week_original`, `week_rookie`, `day_r18`, `day_male_r18`, `day_female_r18`,
+   * `week_r18`, `week_r18g`, `day_manga`, `week_manga`, `month_manga`,
+   * `week_rookie_manga`, `day_r18_manga`, `week_r18_manga`, `week_r18g_manga`.
+   * 
+   * All options can be in either kebab-cases or snake-cases.
+   */
+  getIllusts(type, options = {}) {
+    return this.search('get_illusts', null, type, options)
   }
 }
 
