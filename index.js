@@ -42,9 +42,17 @@ class PixivAPI {
       'App-Version': '7.1.11',
       'User-Agent': 'PixivIOSApp/7.1.11 (iOS 9.0; iPhone8,2)',
     }
+    /** Whether to allow cache */
+    this.allowCache = true
   }
 
-  /** @private Request without authorization */
+  /**
+   * @private Request without authorization
+   * @param {string|URL} url URL
+   * @param {string} method Method
+   * @param {object} headers Headers
+   * @param {string|object} postdata Data
+   **/
   request({url, method, headers, postdata}) {
     if (!(url instanceof URL)) {
       url = new URL(url, BASE_URL)
@@ -117,6 +125,7 @@ class PixivAPI {
     this.auth = null
     this.username = null
     this.password = null
+    this._user_state = null
     delete this.headers.Authorization
   }
 
@@ -190,8 +199,10 @@ class PixivAPI {
 
   /** Get pixiv user state (authorization required) */
   userState() {
+    if (this.allowCache && this._user_state) return this._user_state
     return this.authRequest('/v1/user/me/state').then((data) => {
       if (data.user_state) {
+        this._user_state = data.user_state
         return data.user_state
       } else {
         throw data
@@ -236,18 +247,17 @@ class PixivAPI {
    * @param {string} key Search key
    * @param {string} type Search type
    * @param {object} options Search options
+   * @param {Function} callback Callback
    */
-  search(category, key, type, options = {}) {
+  search(category, key, type, options, callback) {
     if (!key) {
       return Promise.reject(new TypeError('key required'))
-    } else if (!searchData[category]) {
-      return Promise.reject(new RangeError(`"${category}" is not a supported category.`))
     } else if (!searchData[category][type]) {
       return Promise.reject(new RangeError(`"${type}" is not a supported type.`))
     } else {
       const search = searchData[category][type]
       const query = {filter: 'for_ios'}
-      query[searchData[category].key] = key
+      query[searchData[category]._key] = key
       if (search.options instanceof Function) {
         Object.assign(query, search.options.call(this))
       } else if (search.options instanceof Object) {
@@ -256,31 +266,45 @@ class PixivAPI {
       let request = this.authRequest(`${search.url}?${
         QS.stringify(Object.assign(query, toKebab(options)))
       }`)
-      if (search.then) request = request.then(search.then)
+      callback = callback || search.then
+      if (callback) request = request.then(data => callback(data, this))
       return request
     }
   }
 
   /**
-   * Search by keyword (authorization required)
-   * @param {string} key Search key
+   * Search by word (authorization required)
+   * @param {string} word Search keyword
    * @param {string} type Search type
    * @param {object} options Search options
    * 
-   * Supported types: `illust`, `illustPopularPreview`, `illustBookmarkRanges`,
+   * - Supported types: `illust`, `illustPopularPreview`, `illustBookmarkRanges`,
    * `novel`, `novelPopularPreview`, `novelBookmarkRanges`, `user`, `autoComplete`.
-   * 
-   * Supported options: `searchTarget`, `sort`.
-   * 
-   * Supported search target: `partialMatchForTags`, `exactMatchForTags`, `titleAndCaption`.
-   * 
-   * Supported sorting method: `dateDesc`, `dateAsc`,
+   * - Supported options: `searchTarget`, `sort`.
+   * - Supported search target: `partialMatchForTags`, `exactMatchForTags`, `titleAndCaption`.
+   * - Supported sorting method: `dateDesc`, `dateAsc`,
    * `popularDesc`(only available for pixiv premium member).
    * 
-   * All specifications can be in either kebab-cases or camel-cases.
+   * All options can be in either kebab-cases or snake-cases.
    */
-  searchWord(...args) {
-    return this.search('word', ...args)
+  searchWord(word, type, options = {}) {
+    return this.search('word', word, type, options)
+  }
+
+  /**
+   * Search by user (authorization required)
+   * @param {number} id User id
+   * @param {string} type Search type
+   * @param {object} options Search options
+   * 
+   * - Supported types: `detail`, `illusts`, `bookmarkIllusts`, `bookmarkTags`.
+   * - Supported options: `restrict`.
+   * - Supported restrictions: `public`, `private`.
+   * 
+   * All options can be in either kebab-cases or snake-cases.
+   */
+  searchUser(id, type, options = {}) {
+    return this.search('user', id, type, options)
   }
 }
 

@@ -5,7 +5,7 @@
 - 完全使用 NodeJS 原生库编写，无需任何依赖。
 - 支持 https 等多种网络库，登录信息更加安全。
 - 自带 hosts 接口，可以实现自动翻墙功能。
-- 同时支持 camel-case 和 kabab-case。
+- 同时支持 camel-case 和 snake-case。
 - 当检测到 premium 用户时自动启动按热度排序。
 - 所有函数使用 jsDoc 进行注释，便于阅读。
 
