@@ -118,8 +118,8 @@ class PixivAPI {
    * @param {boolean} remember Whether to remember password
    */
   login(username, password, remember = true) {
-    if (!username) return Promise.reject(new TypeError('username required'))
-    if (!password) return Promise.reject(new TypeError('password required'))
+    if (!username) return AsyncWrapper.reject(new TypeError('username required'))
+    if (!password) return AsyncWrapper.reject(new TypeError('password required'))
     return this.request({
       url: 'https://oauth.secure.pixiv.net/auth/token',
       method: 'POST',
@@ -164,7 +164,7 @@ class PixivAPI {
    * @param {string} token Refreshing token
    */
   refreshAccessToken(token = this.auth ? this.auth.refresh_token : null) {
-    if (!token) return Promise.reject(new TypeError('refresh_token required'))
+    if (!token) return AsyncWrapper.reject(new TypeError('refresh_token required'))
     return this.request({
       url: 'https://oauth.secure.pixiv.net/auth/token',
       method: 'POST',
@@ -189,7 +189,7 @@ class PixivAPI {
    * @param {string} nickname Nickname
    */
   createProvisionalAccount(nickname) {
-    if (!nickname) return Promise.reject(new TypeError('nickname required'))
+    if (!nickname) return AsyncWrapper.reject(new TypeError('nickname required'))
     return this.request({
       url: 'https://accounts.pixiv.net/api/provisional-accounts/create',
       method: 'POST',
@@ -213,8 +213,8 @@ class PixivAPI {
    * @param {object} options.postdata Postdata
    */
   authRequest(url, options = {}) {
-    if (!url) return Promise.reject(new TypeError('Url cannot be empty'))
-    if (!this.auth) return Promise.reject(new Error('Authorization required'))
+    if (!url) return AsyncWrapper.reject(new TypeError('Url cannot be empty'))
+    if (!this.auth) return AsyncWrapper.reject(new Error('Authorization required'))
     options.url = url
     options.headers = options.headers || {}
     return this.request(options).catch((error) => {
@@ -244,7 +244,9 @@ class PixivAPI {
 
   /** Get pixiv user state (authorization required) */
   userState() {
-    if (this.allowCache && this._user_state) return this._user_state
+    if (this.allowCache && this._user_state) {
+      return AsyncWrapper.resolve(this._user_state)
+    }
     return this.authRequest('/v1/user/me/state').then((data) => {
       if (data.user_state) {
         this._user_state = data.user_state
@@ -264,7 +266,7 @@ class PixivAPI {
    * @param {string} info.email New mail address
    */
   editUserAccount(info) {
-    if (!info) return Promise.reject(new TypeError('info required'))
+    if (!info) return AsyncWrapper.reject(new TypeError('info required'))
     const postdata = {}
     if (info.password) postdata.current_password = info.password
     if (info.pixivId) postdata.new_user_account = info.pixivId
@@ -288,12 +290,12 @@ class PixivAPI {
    */
   search(category, key, type, options, callback) {
     if (!searchData[category][type]) {
-      return Promise.reject(new RangeError(`"${type}" is not a supported type.`))
+      return AsyncWrapper.reject(new RangeError(`"${type}" is not a supported type.`))
     } else {
       const search = searchData[category][type]
       const query = {filter: 'for_ios'}
       if (searchData[category]._key) {
-        if (!key) return Promise.reject(new TypeError('key required'))
+        if (!key) return AsyncWrapper.reject(new TypeError('key required'))
         query[searchData[category]._key] = key
       }
       if (search.options instanceof Function) {

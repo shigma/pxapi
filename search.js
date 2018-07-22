@@ -1,4 +1,10 @@
-const {PixivIllust, PixivNovel, PixivUser, collect} = require('./util')
+const {
+  PixivIllust,
+  PixivNovel,
+  PixivUser,
+  PixivComment,
+  collect
+} = require('./util')
 
 module.exports = {
   word: {
@@ -11,21 +17,21 @@ module.exports = {
           sort: this.auth.user.is_preminum ? 'popular_desc' : 'date_desc'
         }
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     illustPopularPreview: {
       url: '/v1/search/popular-preview/illust',
       options: {
         target: 'partial_match_for_tags',
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     illustBookmarkRanges: {
       url: '/v1/search/bookmark-ranges/illust',
       options: {
         target: 'partial_match_for_tags',
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     novel: {
       url: '/v1/search/novel',
@@ -35,25 +41,25 @@ module.exports = {
           sort: this.auth.user.is_preminum ? 'popular_desc' : 'date_desc'
         }
       },
-      then: collect.novels
+      then: collect(PixivNovel)
     },
     novelPopularPreview: {
       url: '/v1/search/popular-preview/novel',
       options: {
         target: 'partial_match_for_tags',
       },
-      then: collect.novels
+      then: collect(PixivNovel)
     },
     novelBookmarkRanges: {
       url: '/v1/search/bookmark-ranges/novel',
       options: {
         target: 'partial_match_for_tags',
       },
-      then: collect.novels
+      then: collect(PixivNovel)
     },
     user: {
       url: '/v1/search/user',
-      then: collect.users
+      then: collect(PixivUser)
     },
     autoComplete: {
       url: '/v1/search/autocomplete',
@@ -68,18 +74,18 @@ module.exports = {
     },
     illusts: {
       url: '/v1/user/illusts',
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     novels: {
       url: '/v1/user/novels',
-      then: collect.novels
+      then: collect(PixivNovel)
     },
     bookmarkIllusts: {
       url: '/v1/user/bookmarks/illust',
       options: {
         restrict: 'public'
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     bookmarkIllustTags: {
       url: '/v1/user/bookmark-tags/illust',
@@ -101,18 +107,18 @@ module.exports = {
     },
     myPixiv: {
       url: '/v1/user/mypixiv',
-      then: collect.users
+      then: collect(PixivUser)
     },
     following: {
       url: '/v1/user/following',
       options: {
         restrict: 'public'
       },
-      then: collect.users
+      then: collect(PixivUser)
     },
     follower: {
       url: '/v1/user/follower',
-      then: collect.users
+      then: collect(PixivUser)
     },
     followDetail: {
       url: '/v1/user/follow/detail',
@@ -131,11 +137,11 @@ module.exports = {
     },
     comments: {
       url: '/v2/illust/comments',
-      then: collect.comments
+      then: collect(PixivComment)
     },
     related: {
       url: '/v2/illust/related',
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     metadata: {
       url: '/v1/ugoira/metadata',
@@ -163,69 +169,69 @@ module.exports = {
     },
     comments: {
       url: '/v2/novel/comments',
-      then: collect.comments
+      then: collect(PixivComment)
     },
     related: {
       url: '/v2/novel/related',
-      then: collect.novels
+      then: collect(PixivNovel)
     },
   },
   comment: {
     _key: 'comment_id',
     replies: {
       url: '/v1/illust/comment/replies',
-      then: collect.comments
+      then: collect(PixivComment)
     }
   },
   series: {
     _key: 'series_id',
     detail: {
       url: '/v1/novel/series',
-      then: collect.novels
+      then: collect(PixivNovel)
     }
   },
   get_users: {
     recommended: {
       url: '/v1/user/recommended',
-      then: collect.users
+      then: collect(PixivUser)
     },
   },
   get_illusts: {
     walkthrough: {
       url: '/v1/walkthrough/illusts',
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     new: {
       url: '/v1/illust/new',
       options: {
         content_type: 'illust'
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     follow: {
       url: '/v2/illust/follow',
       options: {
         restrict: 'all'
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     recommended: {
       url: '/v1/illust/recommended',
       options: {
         include_ranking_illusts: true
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     ranking: {
       url: '/v1/illust/ranking',
       options: {
         mode: 'day'
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     myPixiv: {
       url: '/v2/illust/mypixiv',
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     trendingTags: {
       url: '/v1/trending-tags/illust',
@@ -238,14 +244,14 @@ module.exports = {
       options: {
         include_ranking_label: true
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     },
     new: {
       url: '/v1/illust/new',
       options: {
         content_type: 'manga'
       },
-      then: collect.illusts
+      then: collect(PixivIllust)
     }
   },
   get_novels: {
@@ -254,32 +260,32 @@ module.exports = {
       options: {
         content_type: 'illust'
       },
-      then: collect.novels
+      then: collect(PixivNovel)
     },
     follow: {
       url: '/v1/novel/follow',
       options: {
         restrict: 'all'
       },
-      then: collect.novels
+      then: collect(PixivNovel)
     },
     recommended: {
       url: '/v1/novel/recommended',
       options: {
         include_ranking_novels: true
       },
-      then: collect.novels
+      then: collect(PixivNovel)
     },
     ranking: {
       url: '/v1/novel/ranking',
       options: {
         mode: 'day'
       },
-      then: collect.novels
+      then: collect(PixivNovel)
     },
     myPixiv: {
       url: '/v1/novel/mypixiv',
-      then: collect.novels
+      then: collect(PixivNovel)
     },
     trendingTags: {
       url: '/v1/trending-tags/novel',

@@ -25,11 +25,6 @@ function collect(items, data, type) {
   })
 }
 
-collect.illusts = (data, api) => collect(data.illusts, {...data, api}, PixivIllust)
-collect.novels = (data, api) => collect(data.novels, {...data, api}, PixivNovel)
-collect.users = (data, api) => collect(data.user_previews, {...data, api}, PixivUser)
-collect.comments = (data, api) => collect(data.comments, {...data, api}, PixivComment)
-
 class PixivUser {
   constructor(data, api) {
     /** General information */
@@ -119,6 +114,8 @@ class PixivUser {
     })
   }
 }
+
+PixivUser.type = 'illusts'
 
 class PixivIllust {
   constructor(data, api) {
@@ -273,4 +270,15 @@ class PixivComment {
   }
 }
 
-module.exports = {PixivIllust, PixivNovel, PixivComment, PixivUser, collect}
+PixivIllust.type = 'illusts'
+PixivNovel.type = 'novels'
+PixivUser.type = 'user_previews'
+PixivComment.type = 'comments'
+
+module.exports = {
+  PixivIllust,
+  PixivNovel,
+  PixivComment,
+  PixivUser,
+  collect: type => (data, api) => collect(data[type.type], {...data, api}, type)
+}
