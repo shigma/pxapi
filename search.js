@@ -99,6 +99,25 @@ module.exports = {
         restrict: 'public'
       }
     },
+    myPixiv: {
+      url: '/v1/user/mypixiv',
+      then: collect.users
+    },
+    following: {
+      url: '/v1/user/following',
+      options: {
+        restrict: 'public'
+      },
+      then: collect.users
+    },
+    follower: {
+      url: '/v1/user/follower',
+      then: collect.users
+    },
+    followDetail: {
+      url: '/v1/user/follow/detail',
+      then: data => data.follow_detail
+    }
   },
   illust: {
     _key: 'illust_id',
@@ -117,7 +136,39 @@ module.exports = {
     related: {
       url: '/v2/illust/related',
       then: collect.illusts
+    },
+    metadata: {
+      url: '/v1/ugoira/metadata',
+      then: (data) => {
+        if (data.ugoira_metadata) {
+          return data.ugoira_metadata
+        } else {
+          throw data
+        }
+      }
     }
+  },
+  novel: {
+    _key: 'novel_id',
+    detail: {
+      url: '/v2/novel/detail',
+      then: (data, api) => new PixivNovel(data.novel, api)
+    },
+    text: {
+      url: '/v1/novel/text'
+    },
+    bookmarkDetail: {
+      url: '/v2/novel/bookmark/detail',
+      then: data => data.bookmark_detail
+    },
+    comments: {
+      url: '/v2/novel/comments',
+      then: collect.comments
+    },
+    related: {
+      url: '/v2/novel/related',
+      then: collect.novels
+    },
   },
   comment: {
     _key: 'comment_id',
@@ -125,6 +176,19 @@ module.exports = {
       url: '/v1/illust/comment/replies',
       then: collect.comments
     }
+  },
+  series: {
+    _key: 'series_id',
+    detail: {
+      url: '/v1/novel/series',
+      then: collect.novels
+    }
+  },
+  get_users: {
+    recommended: {
+      url: '/v1/user/recommended',
+      then: collect.users
+    },
   },
   get_illusts: {
     walkthrough: {
@@ -168,11 +232,23 @@ module.exports = {
       then: data => data.trend_tags
     }
   },
-  get_novels: {
-    walkthrough: {
-      url: '/v1/walkthrough/novels',
-      then: collect.novels
+  get_mangas: {
+    recommended: {
+      url: '/v1/manga/recommended',
+      options: {
+        include_ranking_label: true
+      },
+      then: collect.illusts
     },
+    new: {
+      url: '/v1/illust/new',
+      options: {
+        content_type: 'manga'
+      },
+      then: collect.illusts
+    }
+  },
+  get_novels: {
     new: {
       url: '/v1/novel/new',
       options: {
@@ -181,7 +257,7 @@ module.exports = {
       then: collect.novels
     },
     follow: {
-      url: '/v2/novel/follow',
+      url: '/v1/novel/follow',
       options: {
         restrict: 'all'
       },
@@ -202,7 +278,7 @@ module.exports = {
       then: collect.novels
     },
     myPixiv: {
-      url: '/v2/novel/mypixiv',
+      url: '/v1/novel/mypixiv',
       then: collect.novels
     },
     trendingTags: {

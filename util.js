@@ -16,9 +16,11 @@ function collect(items, data, type) {
   result.api = data.api
   result.next = data.next_url
   result.limit = data.search_span_limit
+  result.itemAt = index => result[index - 1]
   return new Proxy(result, {
     get(target, key) {
-      return Reflect.get(target, key)
+      const result = Reflect.get(target, key)
+      return result instanceof Function ? result.bind(target) : result
     }
   })
 }
@@ -79,6 +81,24 @@ class PixivUser {
     })
   }
 
+  /** Get user followers */
+  followers() {
+    if (this.api.allowCache && this._followers) return Promise.resolve(this._followers)
+    return this.api.search('user', this.id, 'follower', {}, (data) => {
+      this._followers = collect(data.user_previews, {...data, api: this.api}, PixivUser)
+      return this._followers
+    })
+  }
+
+  /** Get user followings */
+  followings() {
+    if (this.api.allowCache && this._followings) return Promise.resolve(this._followings)
+    return this.api.search('user', this.id, 'following', {}, (data) => {
+      this._followings = collect(data.user_previews, {...data, api: this.api}, PixivUser)
+      return this._followings
+    })
+  }
+
   /**
    * Follow user
    * @param {string} restrict Restriction
@@ -108,8 +128,8 @@ class PixivIllust {
   }
 
   /** Illustrator */
-  get author() {
-    return new PixivUser({user: this.user}, this.api)
+  author() {
+    return Promise.resolve(new PixivUser({user: this.user}, this.api))
   }
 
   /** Get illustration detail information */
@@ -191,8 +211,8 @@ class PixivNovel {
   }
 
   /** Author */
-  get author() {
-    return new PixivUser({user: this.user}, this.api)
+  author() {
+    return Promise.resolve(new PixivUser({user: this.user}, this.api))
   }
 
   /**
@@ -239,8 +259,8 @@ class PixivComment {
   }
 
   /** Author */
-  get author() {
-    return new PixivUser({user: this.user}, this.api)
+  author() {
+    return Promise.resolve(new PixivUser({user: this.user}, this.api))
   }
 
   /** Get comment replies */

@@ -1,5 +1,5 @@
 const QS = require('querystring')
-const URL = require('url').URL
+const {URL} = require('url')
 const Hosts = require('./hosts.js')
 const searchData = require('./search')
 
@@ -28,6 +28,28 @@ function toKebab(source) {
   }
 }
 
+function _wrap(source) {
+  if (!(source instanceof Promise)) return source
+  return new Proxy(source, {
+    get(target, property) {
+      if (property in Promise.prototype) {
+        return (...args) => {
+          return _wrap(target[property].apply(target, args))
+        }
+      } else {
+        return (...args) => _wrap(target.then((result) => {
+          return result[property](...args)
+        }))
+      }
+    }
+  })
+}
+
+const AsyncWrapper = new Proxy(Promise, {
+  construct: (_, args) => _wrap(new Promise(...args)),
+  get: (target, property) => _wrap(target[property])
+})
+
 class PixivAPI {
   constructor({library, hosts} = {}) {
     /** Web library */
@@ -47,6 +69,14 @@ class PixivAPI {
   }
 
   /**
+   * Set default language
+   * @param {string} language Language
+   **/
+  setLanguage(language) {
+    this.headers['Accept-Language'] = language
+  }
+
+  /**
    * @private Request without authorization
    * @param {string|URL} url URL
    * @param {string} method Method
@@ -57,7 +87,7 @@ class PixivAPI {
     if (!(url instanceof URL)) {
       url = new URL(url, BASE_URL)
     }
-    return new Promise((resolve, reject) => {
+    return new AsyncWrapper((resolve, reject) => {
       let data = ''
       const request = this.library.request({
         method: method || 'GET',
@@ -305,7 +335,10 @@ class PixivAPI {
    * @param {string} type Search type
    * @param {object} options Search options
    * 
-   * - Supported types: `detail`, `illusts`, `bookmarkIllusts`, `bookmarkTags`.
+   * - Supported types: `detail`(default), `myPixiv`,
+   * `illusts`, `bookmarkIllusts`, `bookmarkIllustTags`,
+   * `novels`, `bookmarkNovels`, `bookmarkNovelTags`,
+   * `following`, `follower`, `followDetail`.
    * - Supported options: `restrict`.
    * - Supported restrictions: `all`, `public`, `private`.
    * 
@@ -319,38 +352,64 @@ class PixivAPI {
    * Search by illustration (authorization required)
    * @param {number} id Illustration id
    * @param {string} type Search type
-   * @param {object} options Search options
    * 
-   * - Supported types: `detail`, `illusts`, `bookmarkIllusts`, `bookmarkIllustTags`,
-   * `bookmarkNovels`, `bookmarkNovelTags`.
-   * 
-   * All options can be in either kebab-cases or snake-cases.
+   * - Supported types: `detail`(default), `bookmarkDetail`,
+   * `comments`, `related`, `metadata`.
    */
-  searchIllust(id, type = 'detail', options = {}) {
-    return this.search('illust', id, type, options)
+  searchIllust(id, type = 'detail') {
+    return this.search('illust', id, type)
+  }
+
+  /**
+   * Search by novel (authorization required)
+   * @param {number} id Novel id
+   * @param {string} type Search type
+   * 
+   * - Supported types: `detail`(default), `text`, `bookmarkDetail`, `comments`.
+   */
+  searchNovel(id, type = 'detail') {
+    return this.search('novel', id, type)
   }
 
   /**
    * Search by comment (authorization required)
    * @param {number} id Comment id
    * @param {string} type Search type
-   * @param {object} options Search options
    * 
-   * - Supported types: `replies`.
-   * 
-   * All options can be in either kebab-cases or snake-cases.
+   * - Supported types: `replies`(default).
    */
-  searchComment(id, type, options = {}) {
-    return this.search('comment', id, type, options)
+  searchComment(id, type = 'replies') {
+    return this.search('comment', id, type)
+  }
+
+  /**
+   * Search by series (authorization required)
+   * @param {number} id Series id
+   * @param {string} type Search type
+   * 
+   * - Supported types: `detail`(default).
+   */
+  searchSeries(id, type = 'detail') {
+    return this.search('series', id, type)
+  }
+
+  /**
+   * Get users
+   * @param {string} type Search type
+   * 
+   * - Supported types: `recommended`(default), `new`.
+   */
+  getUsers(type = 'recommended', options = {}) {
+    return this.search('get_users', null, type, options)
   }
 
   /**
    * Get illustrations
    * @param {string} type Illustration type
-   * @param {object} options Illustration options
+   * @param {object} options Search options
    * 
-   * - Supported types: `walkthrough`, `new`, `follow`,
-   * `recommended`, `ranking`, `myPixiv`, `trendingTags`.
+   * - Supported types: `recommended`(default), `new`, `follow`,
+   * `walkthrough`, `ranking`, `myPixiv`, `trendingTags`.
    * - Supported options: `restrict`, `mode`.
    * - Supported restrictions: `all`, `public`, `private`.
    * - Supported modes: `day`, `week`, `month`, `day_male`, `day_female`,
@@ -360,19 +419,18 @@ class PixivAPI {
    * 
    * All options can be in either kebab-cases or snake-cases.
    */
-  getIllusts(type, options = {}) {
+  getIllusts(type = 'recommended', options = {}) {
     return this.search('get_illusts', null, type, options)
   }
 
   /**
    * Get novels
    * @param {string} type Novel type
-   * @param {object} options Novel options
+   * @param {object} options Search options
    * 
-   * - Supported types: `walkthrough`, `new`, `follow`,
-   * `recommended`, `ranking`, `myPixiv`, `trendingTags`.
-   * - Supported options: `restrict`, `mode`.
-   * - Supported restrictions: `all`, `public`, `private`.
+   * - Supported types: `recommended`(default), `new`, `follow`,
+   * `ranking`, `myPixiv`, `trendingTags`.
+   * - Supported options: `mode`.
    * - Supported modes: `day`, `week`, `month`, `day_male`, `day_female`,
    * `week_original`, `week_rookie`, `day_r18`, `day_male_r18`, `day_female_r18`,
    * `week_r18`, `week_r18g`, `day_manga`, `week_manga`, `month_manga`,
@@ -380,8 +438,18 @@ class PixivAPI {
    * 
    * All options can be in either kebab-cases or snake-cases.
    */
-  getNovels(type, options = {}) {
+  getNovels(type = 'recommended', options = {}) {
     return this.search('get_novels', null, type, options)
+  }
+
+  /**
+   * Get mangas
+   * @param {string} type Search type
+   * 
+   * - Supported types: `recommended`(default), `new`.
+   */
+  getMangas(type = 'recommended') {
+    return this.search('get_mangas', null, type)
   }
 }
 
