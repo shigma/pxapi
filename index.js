@@ -99,7 +99,13 @@ class PixivAPI {
         path: url.pathname + url.search
       }, (response) => {
         response.on('data', chunk => data += chunk)
-        response.on('end', () => resolve(JSON.parse(data)))
+        response.on('end', () => {
+          try {
+            return resolve(JSON.parse(data))
+          } catch (err) {
+            return reject(new Error(`An error is encounted in ${data}\n${err}`))
+          }
+        })
       })
       request.on('error', error => reject(error))
       if (postdata instanceof Object) {
@@ -135,18 +141,23 @@ class PixivAPI {
         password,
       }
     }).then((data) => {
-      /** Authorization Information */
-      this.auth = data.response
-      /** Whether to remember password */
-      this.remember = !!remember
-      if (remember) {
-        /** User name */
-        this.username = username
-        /** Password */
-        this.password = password
-        this.headers.Authorization = `Bearer ${data.response.access_token}`
+      if (data.response) {
+        /** Authorization Information */
+        this.auth = data.response
+        /** Whether to remember password */
+        this.remember = !!remember
+        if (remember) {
+          /** User name */
+          this.username = username
+          /** Password */
+          this.password = password
+          this.headers.Authorization = `Bearer ${data.response.access_token}`
+        }
+        return data.response
+      } else {
+        console.log(data)
+        throw new Error('Wrong password.')
       }
-      return data.response
     }).catch(catcher)
   }
 
