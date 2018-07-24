@@ -1,4 +1,5 @@
 const FS = require('fs')
+const path = require('path')
 
 class Hosts {
   constructor(data) {
@@ -30,7 +31,7 @@ class Hosts {
 
 Object.defineProperty(Hosts, 'default', {
   get() {
-    return FS.readFileSync('./hosts', {encoding: 'utf8'})
+    return FS.readFileSync(path.join(__dirname, 'hosts'), {encoding: 'utf8'})
   }
 })
 

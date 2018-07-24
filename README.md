@@ -86,17 +86,36 @@ PixivAPI 有下列实例方法：
 
 #### pixiv.setLanguage(language: string): void
 
+重新设置当前语言。默认语言为`en-US`。
+- language: 要设置的语言名。形如`en-US`。
+
 #### pixiv.login(username: string, password: string, remember?: boolean): AsyncWrapper
 
-#### pixiv.logout(): void
+登录到 Pixiv 账号。
+- username: 用户名或者邮箱地址。
+- password: 密码。
+- remember: 是否记住密码。默认为`true`。
+- 返回：提交得到的结果。
 
 #### pixiv.logout(): void
+
+登出当前的 Pixiv 账号。
 
 #### pixiv.refreshAccessToken(token?: string): AsyncWrapper
 
+更新 Pixiv 账号的访问令牌。
+- token: 新的访问令牌。默认值为旧的访问令牌。
+- 返回：提交得到的结果。
+
 #### pixiv.createProvisionalAccount(nickname: string): AsyncWrapper
 
+创建一个临时账号。
+- nickname: 昵称。
+- 返回: 提交得到的结果。
+
 #### pixiv.userState(): AsyncWrapper
+
+- 返回: 当前用户的状态信息。
 
 #### pixiv.editUserAccount({password?: string, pixivId?: string, newPassword?: string, email?: string}): AsyncWrapper
 
