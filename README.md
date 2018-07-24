@@ -11,6 +11,18 @@
 - 当检测到 premium 用户时自动启动按热度排序。
 - 所有函数使用 jsDoc 进行注释，便于阅读。
 
+## 安装与使用
+
+安装：
+```
+npm i pxapi
+```
+
+使用：
+```JavaScript
+const PixivAPI = require('pxapi')
+```
+
 ## 文档
 
 下面的文档将介绍 Pixiv API Client 的使用方法。我会按照类的顺序依次介绍：
@@ -99,7 +111,10 @@ Search API 包含 searchWord，searchUser，searchIllust，searchNovel，searchC
 Get API 包含 getUsers，getIllusts，getNovels，getMangas。它们的使用方法类似，我们一并介绍。
 
 ### PixivUser
+
 ### PixivNovel
+
 ### PixivIllust
+
 ### PixivComment
 
