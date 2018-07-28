@@ -51,7 +51,7 @@ const AsyncWrapper = new Proxy(Promise, {
 })
 
 class PixivAPI {
-  constructor({library, hosts} = {}) {
+  constructor({library, hosts, allowCache = true} = {}) {
     /** Web library */
     this.library = library || require('https')
     /** Host map */
@@ -65,7 +65,7 @@ class PixivAPI {
       'User-Agent': 'PixivIOSApp/7.1.11 (iOS 9.0; iPhone8,2)',
     }
     /** Whether to allow cache */
-    this.allowCache = true
+    this.allowCache = allowCache
   }
 
   /**
@@ -154,9 +154,11 @@ class PixivAPI {
           this.headers.Authorization = `Bearer ${data.response.access_token}`
         }
         return data.response
+      } else if (data.has_error) {
+        throw data.errors.system
       } else {
-        console.log(data)
-        throw new Error('Wrong password.')
+        console.error('An unknown error was encounted.')
+        throw data
       }
     }).catch(catcher)
   }
