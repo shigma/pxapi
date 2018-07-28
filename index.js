@@ -51,7 +51,7 @@ const AsyncWrapper = new Proxy(Promise, {
 })
 
 class PixivAPI {
-  constructor({library, hosts, allowCache = true} = {}) {
+  constructor({library, hosts, allowCache = true, timeout = 20000} = {}) {
     /** Web library */
     this.library = library || require('https')
     /** Host map */
@@ -66,6 +66,8 @@ class PixivAPI {
     }
     /** Whether to allow cache */
     this.allowCache = allowCache
+    /** Socket timeout */
+    this.timeout = timeout
   }
 
   /**
@@ -96,7 +98,8 @@ class PixivAPI {
         }, this.headers, headers),
         hostname: this.hosts.getHostName(url.hostname),
         servername: url.hostname,
-        path: url.pathname + url.search
+        path: url.pathname + url.search,
+        timeout: this.timeout,
       }, (response) => {
         response.on('data', chunk => data += chunk)
         response.on('end', () => {
@@ -108,6 +111,7 @@ class PixivAPI {
         })
       })
       request.on('error', error => reject(error))
+      request.setTimeout(this.timeout * 1000)
       if (postdata instanceof Object) {
         request.write(QS.stringify(postdata))
       } else if (typeof postdata === 'string') {
