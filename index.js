@@ -1,5 +1,7 @@
 const QS = require('querystring')
 const {URL} = require('url')
+const https = require('https')
+const Events = require('events')
 const Hosts = require('./hosts.js')
 const searchData = require('./search')
 
@@ -54,16 +56,13 @@ const supportedLanguages = ['zh', 'zh-TW', 'en', 'ja']
 
 class PixivAPI {
   constructor({
-    library,
-    hosts,
+    hosts = Hosts.default,
     allowCache = true,
     timeout = 20000,
-    language = 'en-US'
+    language = 'en-US',
   } = {}) {
-    /** Web library */
-    this.library = library || require('https')
     /** Host map */
-    this.hosts = new Hosts(hosts || Hosts.default)
+    this.hosts = new Hosts(hosts)
     /** Default headers */
     this.headers = {
       'App-OS': 'ios',
@@ -77,6 +76,12 @@ class PixivAPI {
     this.timeout = timeout
     /** Set language */
     this.language = language
+    /** Event emitter */
+    this.events = new Events()
+  }
+
+  get user() {
+    return Object.assign({}, this.auth.user)
   }
 
   get language() {
@@ -85,6 +90,20 @@ class PixivAPI {
 
   set language(value) {
     this.headers['Accept-Language'] = value
+  }
+
+  authorize(auth) {
+    if (!auth) return
+    this.auth = auth
+    this.headers.Authorization = `Bearer ${auth.access_token}`
+  }
+
+  on(event, listener) {
+    this.events.on(event, listener)
+  }
+
+  once(event, listener) {
+    this.events.once(event, listener)
   }
 
   /**
@@ -100,7 +119,7 @@ class PixivAPI {
     }
     return new AsyncWrapper((resolve, reject) => {
       let data = ''
-      const request = this.library.request({
+      const request = https.request({
         method: method || 'GET',
         headers: Object.assign({
           Host: url.hostname
@@ -156,8 +175,9 @@ class PixivAPI {
       }
     }).then((data) => {
       if (data.response) {
+        this.events.emit('auth', data.response)
         /** Authorization Information */
-        this.auth = data.response
+        this.authorize(data.response)
         /** Whether to remember password */
         this.remember = !!remember
         if (remember) {
@@ -165,7 +185,6 @@ class PixivAPI {
           this.username = username
           /** Password */
           this.password = password
-          this.headers.Authorization = `Bearer ${data.response.access_token}`
         }
         return data.response
       } else if (data.has_error) {
@@ -186,12 +205,9 @@ class PixivAPI {
     delete this.headers.Authorization
   }
 
-  /**
-   * Refresh access token
-   * @param {string} token Refreshing token
-   */
-  refreshAccessToken(token = this.auth ? this.auth.refresh_token : null) {
-    if (!token) return AsyncWrapper.reject(new TypeError('refresh_token required'))
+  /** Refresh access token (authorization required) */
+  refreshAccessToken() {
+    if (!this.auth) return AsyncWrapper.reject(new Error('Authorization required'))
     return this.request({
       url: 'https://oauth.secure.pixiv.net/auth/token',
       method: 'POST',
@@ -203,10 +219,11 @@ class PixivAPI {
         client_secret: CLIENT_SECRET,
         get_secure_url: 1,
         grant_type: 'refresh_token',
-        refresh_token: token,
+        refresh_token: this.auth.refresh_token,
       }
     }).then((data) => {
-      this.auth = data.response
+      this.authorize(data.response)
+      this.events.emit('auth', data.response)
       return data.response
     }).catch(catcher)
   }
@@ -244,13 +261,12 @@ class PixivAPI {
     if (!this.auth) return AsyncWrapper.reject(new Error('Authorization required'))
     options.url = url
     options.headers = options.headers || {}
-    return this.request(options).catch((error) => {
-      if (this.remember && this.username && this.password) {
-        return this.parent.login(this.username, this.password).then(() => {
-          return this.request(options)
-        })
-      }
-      throw error
+    return this.request(options).catch(() => {
+      return this.refreshAccessToken().then(() => {
+        return this.request(options)
+      }).catch((error) => {
+        throw error
+      })
     })
   }
 
