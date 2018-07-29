@@ -50,8 +50,16 @@ const AsyncWrapper = new Proxy(Promise, {
   get: (target, property) => _wrap(target[property])
 })
 
+const supportedLanguages = ['zh', 'zh-TW', 'en', 'ja']
+
 class PixivAPI {
-  constructor({library, hosts, allowCache = true, timeout = 20000} = {}) {
+  constructor({
+    library,
+    hosts,
+    allowCache = true,
+    timeout = 20000,
+    language = 'en-US'
+  } = {}) {
     /** Web library */
     this.library = library || require('https')
     /** Host map */
@@ -59,7 +67,6 @@ class PixivAPI {
     /** Default headers */
     this.headers = {
       'App-OS': 'ios',
-      'Accept-Language': 'en-us',
       'App-OS-Version': '9.3.3',
       'App-Version': '7.1.11',
       'User-Agent': 'PixivIOSApp/7.1.11 (iOS 9.0; iPhone8,2)',
@@ -68,14 +75,16 @@ class PixivAPI {
     this.allowCache = allowCache
     /** Socket timeout */
     this.timeout = timeout
+    /** Set language */
+    this.language = language
   }
 
-  /**
-   * Set default language
-   * @param {string} language Language
-   **/
-  setLanguage(language) {
-    this.headers['Accept-Language'] = language
+  get language() {
+    return this.headers['Accept-Language']
+  }
+
+  set language(value) {
+    this.headers['Accept-Language'] = value
   }
 
   /**
@@ -99,7 +108,6 @@ class PixivAPI {
         hostname: this.hosts.getHostName(url.hostname),
         servername: url.hostname,
         path: url.pathname + url.search,
-        timeout: this.timeout,
       }, (response) => {
         response.on('data', chunk => data += chunk)
         response.on('end', () => {
@@ -111,13 +119,15 @@ class PixivAPI {
         })
       })
       request.on('error', error => reject(error))
-      request.setTimeout(this.timeout * 1000)
       if (postdata instanceof Object) {
         request.write(QS.stringify(postdata))
       } else if (typeof postdata === 'string') {
         request.write(postdata)
       }
       request.end()
+      setTimeout(() => {
+        request.abort()
+      }, this.timeout)
     })
   }
 
