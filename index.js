@@ -147,6 +147,12 @@ class PixivAPI {
       setTimeout(() => {
         request.abort()
       }, this.timeout)
+    }).then((result) => {
+      if (result.error) {
+        throw result.error
+      } else {
+        return result
+      }
     })
   }
 
@@ -256,18 +262,17 @@ class PixivAPI {
    * @param {object} options.headers Headers
    * @param {object} options.postdata Postdata
    */
-  authRequest(url, options = {}) {
+  authRequest(url, options = {}, callback = arg => arg) {
     if (!url) return AsyncWrapper.reject(new TypeError('Url cannot be empty'))
     if (!this.auth) return AsyncWrapper.reject(new Error('Authorization required'))
     options.url = url
     options.headers = options.headers || {}
-    return this.request(options).catch(() => {
-      return this.refreshAccessToken().then(() => {
-        return this.request(options)
-      }).catch((error) => {
-        throw error
+    return this.request(options).then(
+      result => callback(result, this),
+      error => this.refreshAccessToken().then(() => {
+        return this.request(options).then(result => callback(result, this))
       })
-    })
+    )
   }
 
   /**
@@ -346,12 +351,9 @@ class PixivAPI {
       } else if (search.options instanceof Object) {
         Object.assign(query, search.options)
       }
-      let request = this.authRequest(`${search.url}?${
+      return this.authRequest(`${search.url}?${
         QS.stringify(Object.assign(query, toKebab(options)))
-      }`)
-      callback = callback || search.then
-      if (callback) request = request.then(data => callback(data, this))
-      return request
+      }`, {}, callback || search.then)
     }
   }
 
